@@ -31,7 +31,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "user.apps.UserConfig",
     "video.apps.VideoConfig",
+    "questions.apps.QuestionsConfig",
     "descriptions.apps.DescriptionsConfig",
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,6 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'drf_yasg2',
+    'rest_framework_simplejwt',
+    'djoser',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -67,7 +72,32 @@ CORS_ALLOW_HEADERS = (
     "content-type"
 )
 
-REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema' }
+REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+ 'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ], }
+
+
+
+# Configure Djoser settings for user registration and authentication
+DJOSER = {
+    'LOGIN_FIELD': 'email',  # You can use 'username' instead of 'email' if needed
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SEND_ACTIVATION_EMAIL': False,  # Set this to True if you want to send activation emails
+}
+
+# Replace the previous JWT settings with SimpleJWT settings
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=14),
+    'SLIDING_TOKEN_REFRESH_LIFETIME_GRACE_PERIOD': timedelta(days=1),
+    'SLIDING_TOKEN_REFRESH_AFTER_INACTIVITY': timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME_REFRESH_ON_LOGIN': True,
+    'SLIDING_TOKEN_REFRESH_ON_VERSION_CHANGE': True,
+    'SLIDING_TOKEN_REFRESH_ON_PASSWORD_CHANGE': True,
+}
 
 TEMPLATES = [
     {

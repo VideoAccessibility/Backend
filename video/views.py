@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import json
 from .models import Video as VideoModel
+from questions.models import Question as QuestionModel
 from .serializer import VideosSerializer
 from rest_framework.renderers import JSONRenderer
 import os
@@ -14,13 +15,24 @@ from django.core.files.storage import default_storage
 from .core import main
 import shutil
 from pytube import YouTube
+from user.jwt_users import JWT_Users
 
 class Videos(APIView):
 
     def get(self, request):
-        print(request.body)
+
+        # CHECK JWT TOKEN
+        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"videos": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
         all_videos = VideoModel.objects.all()
         videos = []
+
         for v in range(len(all_videos)):
             serialized_video = VideosSerializer(all_videos[v])
             vid = JSONRenderer().render(serialized_video.data)
@@ -32,7 +44,16 @@ class Videos(APIView):
 class Video(APIView):
 
     def get(self, request):
-        print(request.body)
+
+        # CHECK JWT TOKEN
+        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"video": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
         id = json.loads(request.body.decode('utf-8'))["id"]
         video = VideoModel.objects.filter(id=id)
         if len(video) > 0:
@@ -53,7 +74,16 @@ def remove_video():
 class QuestionAnswering(APIView):
 
     def post(self, request):
-        print(request.body)
+
+        # CHECK JWT TOKEN
+        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"answer": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
         id = json.loads(request.body.decode('utf-8'))["id"]
         question = json.loads(request.body.decode('utf-8'))["question"]
         currentTime = json.loads(request.body.decode('utf-8'))["currentTime"]
@@ -69,15 +99,29 @@ class QuestionAnswering(APIView):
         if currentTime == '':
             currentTime = 0
         res = main.get_answer(question, currentTime)
+
+        q = QuestionModel(video_id=id, time_stamp=currentTime, question=question, answer=res, username=user)
+        q.save()
+
         return Response({"answer": res}, status=status.HTTP_200_OK)
 
 
 class FileUpload(APIView):
 
     def post(self, request):   
+
+        # CHECK JWT TOKEN
+        token = request.POST.get('jwt')
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
         file_obj = request.FILES['file']
 
-        b = VideoModel(title=file_obj.name.split(".")[0])
+        b = VideoModel(title=file_obj.name.split(".")[0], username=user)
         b.save()
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
 
@@ -95,8 +139,18 @@ class FileUpload(APIView):
 class YoutubeDownloader(APIView):
 
     def post(self, request):   
+
+        # CHECK JWT TOKEN
+        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
         youtube_url = json.loads(request.body.decode('utf-8'))["youtube_url"]
-        b = VideoModel(title=YouTube(youtube_url).title)
+        b = VideoModel(title=YouTube(youtube_url).title, username=user)
         b.save()
         youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{youtube_video.split('/')[-1]}")

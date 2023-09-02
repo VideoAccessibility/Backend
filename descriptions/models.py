@@ -7,4 +7,5 @@ class Description(models.Model):
     video_id = models.IntegerField()
     time_stamp = models.CharField(max_length=200)
     descriptions = models.CharField(max_length=300)
-    modified_descriptions = models.CharField(max_length=300, null=True)
+    modified_descriptions = models.CharField(max_length=10000, null=True)
+    username = models.CharField(max_length=200)
