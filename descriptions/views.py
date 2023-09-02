@@ -19,7 +19,7 @@ class Descriptions(APIView):
         jwt_users1.initialize()
         user = jwt_users1.find_user(request.data.get('jwt'))
         if not user:
-            return Response({"answer": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+            return Response({"descriptions": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
   
         video_id = json.loads(request.body.decode('utf-8'))["video_id"]
@@ -41,7 +41,7 @@ class Descriptions(APIView):
         jwt_users1.initialize()
         user = jwt_users1.find_user(request.data.get('jwt'))
         if not user:
-            return Response({"answer": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+            return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
 
         video_id = json.loads(request.body.decode('utf-8'))["video_id"]
@@ -61,7 +61,7 @@ class Descriptions(APIView):
         jwt_users1.initialize()
         user = jwt_users1.find_user(request.data.get('jwt'))
         if not user:
-            return Response({"answer": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+            return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
 
         id = json.loads(request.body.decode('utf-8'))["id"]
