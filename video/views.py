@@ -21,11 +21,12 @@ class Videos(APIView):
 
     def get(self, request):
 
+        token = request.GET.get('jwt', '')
         # CHECK JWT TOKEN
-        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        # token = json.loads(request.body.decode('utf-8'))["jwt"]
         jwt_users1 = JWT_Users()
         jwt_users1.initialize()
-        user = jwt_users1.find_user(request.data.get('jwt'))
+        user = jwt_users1.find_user(token) #request.data.get('jwt')
         if not user:
             return Response({"videos": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
@@ -45,16 +46,18 @@ class Video(APIView):
 
     def get(self, request):
 
+        token = request.GET.get('jwt', '')
+        id = request.GET.get('id', '')
         # CHECK JWT TOKEN
-        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        # token = json.loads(request.body.decode('utf-8'))["jwt"]
         jwt_users1 = JWT_Users()
         jwt_users1.initialize()
-        user = jwt_users1.find_user(request.data.get('jwt'))
+        user = jwt_users1.find_user(token)
         if not user:
             return Response({"video": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
 
-        id = json.loads(request.body.decode('utf-8'))["id"]
+        # id = json.loads(request.body.decode('utf-8'))["id"]
         video = VideoModel.objects.filter(id=id)
         if len(video) > 0:
             serialized_video = VideosSerializer(video[0])
@@ -79,7 +82,7 @@ class QuestionAnswering(APIView):
         token = json.loads(request.body.decode('utf-8'))["jwt"]
         jwt_users1 = JWT_Users()
         jwt_users1.initialize()
-        user = jwt_users1.find_user(request.data.get('jwt'))
+        user = jwt_users1.find_user(token)
         if not user:
             return Response({"answer": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
@@ -114,7 +117,7 @@ class FileUpload(APIView):
         token = request.POST.get('jwt')
         jwt_users1 = JWT_Users()
         jwt_users1.initialize()
-        user = jwt_users1.find_user(request.data.get('jwt'))
+        user = jwt_users1.find_user(token)
         if not user:
             return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
@@ -144,7 +147,7 @@ class YoutubeDownloader(APIView):
         token = json.loads(request.body.decode('utf-8'))["jwt"]
         jwt_users1 = JWT_Users()
         jwt_users1.initialize()
-        user = jwt_users1.find_user(request.data.get('jwt'))
+        user = jwt_users1.find_user(token)
         if not user:
             return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
