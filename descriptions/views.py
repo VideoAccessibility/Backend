@@ -13,6 +13,7 @@ class Descriptions(APIView):
 
     def get(self, request):
 
+        """ Should Users login to see description? 
         # CHECK JWT TOKEN
         token = json.loads(request.body.decode('utf-8'))["jwt"]
         jwt_users1 = JWT_Users()
@@ -21,8 +22,8 @@ class Descriptions(APIView):
         if not user:
             return Response({"descriptions": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
-  
-        video_id = json.loads(request.body.decode('utf-8'))["video_id"]
+        """
+        video_id = request.GET.get('id')
         descriptions = DescriptionsModel.objects.filter(video_id=video_id)
         if len(descriptions) == 0:
             return Response({"descriptions": "VIDEO_NOT_FOUND"}, status=status.HTTP_200_OK)
