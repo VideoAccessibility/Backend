@@ -81,3 +81,26 @@ class Descriptions(APIView):
             DescriptionsModel.objects.filter(id=id).update(time_stamp=time_stamp)
 
         return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+
+class Star(APIView):
+    def post(self, request):
+        
+        # CHECK JWT TOKEN
+        token = json.loads(request.body.decode('utf-8'))["jwt"]
+        jwt_users1 = JWT_Users()
+        jwt_users1.initialize()
+        user = jwt_users1.find_user(request.data.get('jwt'))
+        if not user:
+            return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+        # CHECK JWT TOKEN
+
+        id = json.loads(request.body.decode('utf-8'))["id"]
+        
+        group_id = DescriptionsModel.objects.filter(id=id).group_id
+        star = DescriptionsModel.objects.filter(id=id).star
+        for d in DescriptionsModel.objects.filter(group_id=group_id):
+            d.update(star=star+1)
+
+        return Response({"status": "success"}, status=status.HTTP_200_OK)
+        
