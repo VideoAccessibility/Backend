@@ -8,4 +8,7 @@ class Description(models.Model):
     time_stamp = models.CharField(max_length=200)
     descriptions = models.CharField(max_length=300)
     modified_descriptions = models.CharField(max_length=10000, null=True)
+    ai_or_human = models.CharField(max_length=100)
+    group_id = models.CharField(max_length=100)
+    group_star = models.IntegerField(default=0)
     username = models.CharField(max_length=200)
