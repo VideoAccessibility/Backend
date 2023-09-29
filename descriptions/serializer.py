@@ -1,13 +1,13 @@
 from rest_framework import serializers
 
 class DescriptionsSerializer(serializers.Serializer):
-    id = models.CharField()
-    created_at = models.DateTimeField()
-    video_id = models.IntegerField()
-    time_stamp = models.CharField()
-    descriptions = models.CharField()
-    modified_descriptions = models.CharField()
-    ai_or_human = models.CharField()
-    group_id = models.CharField()
-    group_star = models.IntegerField()
-    username = models.CharField()
+    id = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    video_id = serializers.IntegerField()
+    time_stamp = serializers.CharField()
+    descriptions = serializers.CharField()
+    modified_descriptions = serializers.CharField()
+    ai_or_human = serializers.CharField()
+    group_id = serializers.CharField()
+    group_star = serializers.IntegerField()
+    username = serializers.CharField()
