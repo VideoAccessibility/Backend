@@ -7,3 +7,4 @@ class Video(models.Model):
     title = models.CharField(max_length=200)
     video_path = models.CharField(max_length=200, null=True)
     username = models.CharField(max_length=200)
+    public_or_private = models.CharField(max_length=200)
