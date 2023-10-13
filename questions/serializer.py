@@ -2,10 +2,10 @@ from rest_framework import serializers
 
 # Create your models here.
 class QuestionSerializer(serializers.Serializer):
-    id = models.CharField()
-    created_at = models.DateTimeField()
-    video_id = models.IntegerField()
-    time_stamp = models.CharField()
-    question = models.CharField()
-    answer = models.CharField()
-    username = models.CharField()
+    id = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    video_id = serializers.IntegerField()
+    time_stamp = serializers.CharField()
+    question = serializers.CharField()
+    answer = serializers.CharField()
+    username = serializers.CharField()
