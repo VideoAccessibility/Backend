@@ -21,7 +21,8 @@ class Descriptions(APIView):
         jwt_users1.initialize()
         user = jwt_users1.find_user(token)
         if not user:
-            return Response({"descriptions": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+            user = ""
+            # return Response({"descriptions": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
   
         # video_id = json.loads(request.body.decode('utf-8'))["video_id"]
