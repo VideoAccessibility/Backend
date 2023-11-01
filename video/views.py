@@ -157,9 +157,11 @@ class FileUpload(APIView):
             return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
 
+        title = request.POST.get('title')
         file_obj = request.FILES['file']
 
-        b = VideoModel(title=file_obj.name.split(".")[0], username=user)
+        # b = VideoModel(title=file_obj.name.split(".")[0], username=user)
+        b = VideoModel(title=title, username=user)
         b.save()
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
 
