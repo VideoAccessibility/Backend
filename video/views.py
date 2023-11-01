@@ -132,9 +132,14 @@ class QuestionAnswering(APIView):
 
         # id = json.loads(request.body.decode('utf-8'))["id"]
         questions = QuestionModel.objects.filter(video_id=id)
+        questions_lst = []
         if len(questions) > 0:
-            serialized_question = QuestionSerializer(questions[0])
-            return Response({"questions": serialized_question.data}, status=status.HTTP_200_OK)
+            # serialized_question = QuestionSerializer(questions[0])
+            for v in range(len(questions)):
+                    serialized_question = QuestionSerializer(questions[v])
+                    qid = JSONRenderer().render(serialized_question.data)
+                    questions_lst.append(qid)
+            return Response({"questions": questions_lst}, status=status.HTTP_200_OK)
         else:
             return Response({"questions": "NOT_FOUND"}, status=status.HTTP_200_OK)
 
