@@ -37,7 +37,7 @@ class Videos(APIView):
         videos = []
 
         for v in range(len(all_videos)):
-            if all_videos[v].public_or_private == "public" or all_videos[v].user == user:
+            if all_videos[v].public_or_private == "public" or all_videos[v].username == user:
                 serialized_video = VideosSerializer(all_videos[v])
                 vid = JSONRenderer().render(serialized_video.data)
                 videos.append(vid)
@@ -64,7 +64,7 @@ class Video(APIView):
         # id = json.loads(request.body.decode('utf-8'))["id"]
         video = VideoModel.objects.filter(id=id)
         if len(video) > 0:
-            if video[0].public_or_private == "public" or video[0].user == user:
+            if video[0].public_or_private == "public" or video[0].username == user:
                 serialized_video = VideosSerializer(video[0])
                 return Response({"video": serialized_video.data}, status=status.HTTP_200_OK)
             else:
