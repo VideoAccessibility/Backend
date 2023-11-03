@@ -17,6 +17,8 @@ from .core import main
 import shutil
 from pytube import YouTube
 from user.jwt_users import JWT_Users
+import cv2
+import os
 
 class Videos(APIView):
 
@@ -146,6 +148,43 @@ class QuestionAnswering(APIView):
 
 class FileUpload(APIView):
 
+    def extract_first_frame(file_url, fname):
+        # Check if the file exists
+        if not os.path.isfile(file_url):
+            print("File not found.")
+            return
+
+        # Extract the file's extension
+        _, file_extension = os.path.splitext(file_url)
+
+        # Open the video file
+        cap = cv2.VideoCapture(file_url)
+
+        # Check if the video can be opened
+        if not cap.isOpened():
+            print("Error: Couldn't open the video.")
+            return
+
+        # Read the first frame
+        ret, frame = cap.read()
+
+        # Check if the frame was read successfully
+        if not ret:
+            print("Error: Couldn't read the first frame.")
+            cap.release()
+            return
+
+        # Close the video file
+        cap.release()
+
+        # Create a filename for the extracted image with the same name as the video
+        file_name = os.path.splitext(os.path.basename(file_url))[0] + "_frame" + file_extension
+
+        # Save the first frame as an image
+        cv2.imwrite(fname, frame)
+
+        print(f"First frame extracted and saved as {file_name}")
+
     def post(self, request):   
 
         # CHECK JWT TOKEN
@@ -158,10 +197,11 @@ class FileUpload(APIView):
         # CHECK JWT TOKEN
 
         title = request.POST.get('title')
+        public_or_private = request.POST.get('public_or_private')
         file_obj = request.FILES['file']
 
         # b = VideoModel(title=file_obj.name.split(".")[0], username=user)
-        b = VideoModel(title=title, username=user)
+        b = VideoModel(title=title, username=user, public_or_private=public_or_private)
         b.save()
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
 
@@ -172,6 +212,7 @@ class FileUpload(APIView):
         file_url = default_storage.url(path)
         print(ff, file_url)
         ###
+        FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
 
         return Response({"status": "success"}, status=204)
     
@@ -190,7 +231,9 @@ class YoutubeDownloader(APIView):
         # CHECK JWT TOKEN
 
         youtube_url = json.loads(request.body.decode('utf-8'))["youtube_url"]
-        b = VideoModel(title=YouTube(youtube_url).title, username=user)
+        public_or_private = json.loads(request.body.decode('utf-8'))["public_or_private"]
+
+        b = VideoModel(title=YouTube(youtube_url).title, username=user, public_or_private=public_or_private)
         b.save()
         youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{youtube_video.split('/')[-1]}")
