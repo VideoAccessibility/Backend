@@ -237,5 +237,7 @@ class YoutubeDownloader(APIView):
         b.save()
         youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{youtube_video.split('/')[-1]}")
+        
+        FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
 
         return Response({"status": "success"}, status=204)
