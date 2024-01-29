@@ -83,6 +83,8 @@ class Video(APIView):
 def remove_video():
     if os.path.exists("videos/video.mp4"):
         os.remove("videos/video.mp4")
+    if not os.path.exists("videos/frames"):
+        os.makedirs("videos/frames")
     filelist = [f for f in os.listdir("videos/frames") if f.endswith(".jpg")]
     for f in filelist:
         os.remove(os.path.join("videos/frames", f))
