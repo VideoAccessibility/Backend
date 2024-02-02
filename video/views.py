@@ -21,6 +21,9 @@ import cv2
 import os
 from yt_dlp import YoutubeDL
 import shutil
+from .core.gpt4vision import create_descriptions, ask_question
+from descriptions.models import Description as DescriptionsModel
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 
 class Videos(APIView):
@@ -110,12 +113,13 @@ class QuestionAnswering(APIView):
             return Response({"answer": "VIDEO_NOT_FOUND"}, status=status.HTTP_200_OK)
 
         remove_video()
-        shutil.copy(video[0].video_path, "videos/video.mp4")
-        main.create_frames("videos/video.mp4")
+        shutil.copy("videos/" + video[0].video_path, "videos/video.mp4")
+        # main.create_frames("videos/video.mp4")
 
         if currentTime == "":
             currentTime = 0
-        res = main.get_answer(question, currentTime)
+        # res = main.get_answer(question, currentTime)
+        res = ask_question("videos/video.mp4", question, currentTime)
 
         q = QuestionModel(
             video_id=id,
@@ -153,6 +157,36 @@ class QuestionAnswering(APIView):
             return Response({"questions": questions_lst}, status=status.HTTP_200_OK)
         else:
             return Response({"questions": "NOT_FOUND"}, status=status.HTTP_200_OK)
+
+
+def get_video_length(video_id):
+    video_path = f"videos/{video_id}.mp4"
+    try:
+        clip = VideoFileClip(video_path)
+        length = clip.duration
+        clip.close()
+        return length
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+            
+def create_descs(video_id, time_stamps, descriptions, ai_or_human="ai"):
+    group_id = "ai" + "#*#" + str(video_id)
+    time_stamps.append(get_video_length(video_id))
+
+    for did, desc in enumerate(descriptions):  
+        time_stamp_start = time_stamps[did]
+        time_stamp_end = time_stamps[did+1]
+        b = DescriptionsModel(
+            video_id=video_id,
+            time_stamp_start=time_stamp_start,
+            time_stamp_end=time_stamp_end,
+            descriptions=desc,
+            username="ai",
+            ai_or_human=ai_or_human,
+            group_id=group_id,
+        )
+        b.save()
 
 
 class FileUpload(APIView):
@@ -212,16 +246,19 @@ class FileUpload(APIView):
         # b = VideoModel(title=file_obj.name.split(".")[0], username=user)
         b = VideoModel(title=title, username=user, public_or_private=public_or_private)
         b.save()
-        VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
+        VideoModel.objects.filter(id=b.id).update(video_path=f"{b.id}.mp4")
 
         ###
         remove_video()
-        path = default_storage.save(f"videos/{b.id}.mp4", ContentFile(file_obj.read()))
+        path = default_storage.save(f"{b.id}.mp4", ContentFile(file_obj.read()))
         ff = default_storage.open(path)
         file_url = default_storage.url(path)
         print(ff, file_url)
         ###
         FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
+        
+        descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
+        create_descs(b.id, time_stamps, descriptions)
 
         return Response({"status": "success"}, status=204)
 
@@ -257,5 +294,8 @@ class YoutubeDownloader(APIView):
             print("videoooo", youtube_video)
 
         FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
+        
+        descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
+        create_descs(b.id, time_stamps, descriptions)
 
         return Response({"status": "success"}, status=204)
