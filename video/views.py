@@ -113,7 +113,7 @@ class QuestionAnswering(APIView):
             return Response({"answer": "VIDEO_NOT_FOUND"}, status=status.HTTP_200_OK)
 
         remove_video()
-        shutil.copy("videos/" + video[0].video_path, "videos/video.mp4")
+        shutil.copy(video[0].video_path, "videos/video.mp4")
         # main.create_frames("videos/video.mp4")
 
         if currentTime == "":
