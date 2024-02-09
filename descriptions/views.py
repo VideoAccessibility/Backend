@@ -113,13 +113,22 @@ class Descriptions(APIView):
         # time_stamp = json.loads(request.body.decode('utf-8'))["time_stamp"]
 
         if modified_descriptions != "":
-            new_desc = (
-                DescriptionsModel.objects.get(id=id).modified_descriptions
-                + "###"
-                + DescriptionsModel.objects.get(id=id).descriptions
-                + ":::who previous descs changed:::"
-                + user
-            )
+            if DescriptionsModel.objects.get(id=id).modified_descriptions:
+                new_desc = (
+                    DescriptionsModel.objects.get(id=id).modified_descriptions
+                    + "###"
+                    + DescriptionsModel.objects.get(id=id).descriptions
+                    + ":::who previous descs changed:::"
+                    + user
+                )
+            else:
+                new_desc = (
+                    "None"
+                    + "###"
+                    + DescriptionsModel.objects.get(id=id).descriptions
+                    + ":::who previous descs changed:::"
+                    + user
+                )
             DescriptionsModel.objects.filter(id=id).update(
                 modified_descriptions=new_desc
             )
