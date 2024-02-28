@@ -24,6 +24,9 @@ import shutil
 from .core.gpt4vision import create_descriptions, ask_question
 from descriptions.models import Description as DescriptionsModel
 from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.editor import VideoFileClip
+from rest_framework import status
+from rest_framework.response import Response
 
 
 class Videos(APIView):
@@ -229,6 +232,7 @@ class FileUpload(APIView):
 
         print(f"First frame extracted and saved as {file_name}")
 
+
     def post(self, request):
         # CHECK JWT TOKEN
         token = request.POST.get("jwt")
@@ -238,16 +242,26 @@ class FileUpload(APIView):
         if not user:
             return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
         # CHECK JWT TOKEN
-
+    
         title = request.POST.get("title")
         public_or_private = request.POST.get("public_or_private")
         file_obj = request.FILES["file"]
-
+    
+        # Check file type
+        if not file_obj.name.endswith('.mp4'):
+            return Response({"error": "File must be in MP4 format"}, status=status.HTTP_400_BAD_REQUEST)
+    
+        # Check file length
+        clip = VideoFileClip(file_obj.temporary_file_path())
+        duration = clip.duration
+        if duration > 120:  # 2 minutes = 120 seconds
+            return Response({"error": "File duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
+    
         # b = VideoModel(title=file_obj.name.split(".")[0], username=user)
         b = VideoModel(title=title, username=user, public_or_private=public_or_private)
         b.save()
         VideoModel.objects.filter(id=b.id).update(video_path=f"{b.id}.mp4")
-
+    
         ###
         remove_video()
         path = default_storage.save(f"{b.id}.mp4", ContentFile(file_obj.read()))
@@ -259,7 +273,7 @@ class FileUpload(APIView):
         
         descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
         create_descs(b.id, time_stamps, descriptions)
-
+    
         return Response({"status": "success"}, status=204)
 
 
@@ -293,9 +307,10 @@ class YoutubeDownloader(APIView):
             youtube_video = ydl.download(URLS)
             print("videoooo", youtube_video)
 
-        FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
-        
-        descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
-        create_descs(b.id, time_stamps, descriptions)
+        # Check file type and length
+        clip = VideoFileClip(f"videos/{b.id}.mp4")
+        duration = clip.duration
+        if duration > 120:  # 2 minutes = 120 seconds
+            return Response({"error": "Video duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"status": "success"}, status=204)
