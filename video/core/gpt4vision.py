@@ -26,7 +26,7 @@ def create_descriptions(video_path):
     frame_count = 0
     frames = []
     while frame_count < len(base64Frames):
-        if frame_count % 150 == 0:
+        if frame_count % 300 == 0:
             frames.append(base64Frames[frame_count])
         frame_count += 1
     
@@ -88,7 +88,7 @@ def ask_question(video_path, question, current_moment):
     frame_count = 0
     frames = []
     while frame_count < len(base64Frames):
-        if frame_count % 150 == 0:
+        if frame_count % 300 == 0:
             frames.append(base64Frames[frame_count])
         frame_count += 1
     
