@@ -18,7 +18,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     username = models.CharField(max_length=255, unique=True)
-    user_type = models.CharField(max_length=255)  # Add user_type field
+    user_type = models.CharField(max_length=255, default="Normal")  # Add user_type field
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
