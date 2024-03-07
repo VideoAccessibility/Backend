@@ -3,7 +3,7 @@ import cv2
 import base64
 from openai import OpenAI
 
-API_KEY = "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"
+API_KEY = "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" #"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"
 openai.api_key = API_KEY
 
 def create_descriptions(video_path):
