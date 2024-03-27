@@ -27,7 +27,8 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import VideoFileClip
 from rest_framework import status
 from rest_framework.response import Response
-
+import torch
+from TTS.api import TTS
 
 class Videos(APIView):
     def get(self, request):
@@ -173,6 +174,20 @@ def get_video_length(video_id):
         print(f"Error: {e}")
         return None
             
+
+def create_speech(text, file_name):
+    # Get device
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # List available 🐸TTS models
+    print(TTS().list_models())
+    
+    # Init TTS
+    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+    # Text to speech to a file
+    tts.tts_to_file(text=text, speaker_wav="my/cloning/audio.wav", language="en", file_path="output.wav")
+    
+        
 def create_descs(video_id, time_stamps, descriptions, ai_or_human="ai"):
     group_id = "ai" + "#*#" + str(video_id)
     time_stamps.append(get_video_length(video_id))
@@ -180,6 +195,8 @@ def create_descs(video_id, time_stamps, descriptions, ai_or_human="ai"):
     for did, desc in enumerate(descriptions):  
         time_stamp_start = time_stamps[did]
         time_stamp_end = time_stamps[did+1]
+        
+        create_speech(desc, f"{video_id}.mp3")
         b = DescriptionsModel(
             video_id=video_id,
             time_stamp_start=time_stamp_start,
@@ -292,14 +309,7 @@ class YoutubeDownloader(APIView):
         public_or_private = json.loads(request.body.decode("utf-8"))[
             "public_or_private"
         ]
-
-        b = VideoModel(
-            title=YouTube(youtube_url).title,
-            username=user,
-            public_or_private=public_or_private,
-        )
-        b.save()
-        VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
+        
         # youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
         URLS = [youtube_url]
         ydl_opts = {"outtmpl": f"videos/{b.id}.mp4", "format": "mp4"}
@@ -312,5 +322,17 @@ class YoutubeDownloader(APIView):
         duration = clip.duration
         if duration > 120:  # 2 minutes = 120 seconds
             return Response({"error": "Video duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
+
+        b = VideoModel(
+            title=YouTube(youtube_url).title,
+            username=user,
+            public_or_private=public_or_private,
+        )
+        b.save()
+        VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
+        
+        FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
+        descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
+        create_descs(b.id, time_stamps, descriptions)
 
         return Response({"status": "success"}, status=204)
