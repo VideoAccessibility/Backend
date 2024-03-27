@@ -310,6 +310,14 @@ class YoutubeDownloader(APIView):
             "public_or_private"
         ]
         
+        b = VideoModel(
+            title=YouTube(youtube_url).title,
+            username=user,
+            public_or_private=public_or_private,
+        )
+        b.save()
+        VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
+        
         # youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
         URLS = [youtube_url]
         ydl_opts = {"outtmpl": f"videos/{b.id}.mp4", "format": "mp4"}
@@ -322,14 +330,6 @@ class YoutubeDownloader(APIView):
         duration = clip.duration
         if duration > 120:  # 2 minutes = 120 seconds
             return Response({"error": "Video duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
-
-        b = VideoModel(
-            title=YouTube(youtube_url).title,
-            username=user,
-            public_or_private=public_or_private,
-        )
-        b.save()
-        VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
         
         FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
         descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
