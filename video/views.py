@@ -196,7 +196,7 @@ def create_descs(video_id, time_stamps, descriptions, ai_or_human="ai"):
         time_stamp_start = time_stamps[did]
         time_stamp_end = time_stamps[did+1]
         
-        create_speech(desc, f"{video_id}.mp3")
+        # create_speech(desc, f"{video_id}.mp3")
         b = DescriptionsModel(
             video_id=video_id,
             time_stamp_start=time_stamp_start,
