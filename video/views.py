@@ -21,14 +21,14 @@ import cv2
 import os
 from yt_dlp import YoutubeDL
 import shutil
-from .core.gpt4vision import create_descriptions, ask_question
+from .core.gpt4vision import create_descriptions, ask_question, create_frames
 from descriptions.models import Description as DescriptionsModel
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import VideoFileClip
 from rest_framework import status
 from rest_framework.response import Response
 import torch
-from TTS.api import TTS
+# from TTS.api import TTS
 
 class Videos(APIView):
     def get(self, request):
@@ -175,28 +175,29 @@ def get_video_length(video_id):
         return None
             
 
-def create_speech(text, file_name):
-    # Get device
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+# def create_speech(text, file_name):
+#     # Get device
+#     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    # List available 🐸TTS models
-    print(TTS().list_models())
+#     # List available 🐸TTS models
+#     print(TTS().list_models())
     
-    # Init TTS
-    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-    # Text to speech to a file
-    tts.tts_to_file(text=text, speaker_wav="my/cloning/audio.wav", language="en", file_path="output.wav")
+#     # Init TTS
+#     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+#     # Text to speech to a file
+#     tts.tts_to_file(text=text, speaker_wav="my/cloning/audio.wav", language="en", file_path="output.wav")
     
         
 def create_descs(video_id, time_stamps, descriptions, ai_or_human="ai"):
     group_id = "ai" + "#*#" + str(video_id)
     time_stamps.append(get_video_length(video_id))
-
+    
+    print("len descriptions", descriptions, "len descriptions", descriptions)
     for did, desc in enumerate(descriptions):  
         time_stamp_start = time_stamps[did]
         time_stamp_end = time_stamps[did+1]
         
-        create_speech(desc, f"{video_id}.mp3")
+        # create_speech(desc, f"{video_id}.mp3")
         b = DescriptionsModel(
             video_id=video_id,
             time_stamp_start=time_stamp_start,
@@ -249,6 +250,57 @@ class FileUpload(APIView):
 
         print(f"First frame extracted and saved as {file_name}")
 
+    # def post(self, request):
+    #     # CHECK JWT TOKEN
+    #     token = request.POST.get("jwt")
+    #     jwt_users1 = JWT_Users()
+    #     jwt_users1.initialize()
+    #     user = jwt_users1.find_user(token)
+    #     if not user:
+    #         return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+    #     # CHECK JWT TOKEN
+    
+    #     title = request.POST.get("title")
+    #     public_or_private = request.POST.get("public_or_private")
+    #     file_obj = request.FILES["file"]
+    
+    #     # Check file type
+    #     if not file_obj.name.endswith('.mp4'):
+    #         return Response({"error": "File must be in MP4 format"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    #     # Check file length
+    #     clip = VideoFileClip(file_obj.temporary_file_path())
+    #     duration = clip.duration
+    #     if duration > 120:  # 2 minutes = 120 seconds
+    #         return Response({"error": "File duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    #     # Save VideoModel instance
+    #     b = VideoModel(title=title, username=user, public_or_private=public_or_private)
+    #     b.save()
+    #     VideoModel.objects.filter(id=b.id).update(video_path=f"{b.id}.mp4")
+    
+    #     # Save video frames
+    #     video_folder = f"videos/{b.id}_frames"
+    #     create_frames(file_obj.temporary_file_path(), video_folder)
+    
+    #     ##
+    #     remove_video()
+    #     path = default_storage.save(f"{b.id}.mp4", ContentFile(file_obj.read()))
+    #     ff = default_storage.open(path)
+    #     file_url = default_storage.url(path)
+    #     print(ff, file_url)
+    #     ###
+    #     FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
+    
+    #     # Process frames for descriptions
+    #     descriptions, time_stamps = create_descriptions(video_folder)
+    #     create_descs(b.id, time_stamps, descriptions)
+    
+    #     # Remove video file
+    #     os.remove(file_obj.temporary_file_path())
+    #     os.remove(f"videos/{b.id}.mp4")
+    
+    #     return Response({"status": "success"}, status=204)
 
     def post(self, request):
         # CHECK JWT TOKEN
@@ -293,7 +345,6 @@ class FileUpload(APIView):
     
         return Response({"status": "success"}, status=204)
 
-
 class YoutubeDownloader(APIView):
     def post(self, request):
         # CHECK JWT TOKEN
@@ -309,21 +360,23 @@ class YoutubeDownloader(APIView):
         public_or_private = json.loads(request.body.decode("utf-8"))[
             "public_or_private"
         ]
-        
+
+        # Get video title and save it to the database
+        title = YouTube(youtube_url).title
         b = VideoModel(
-            title=YouTube(youtube_url).title,
+            title=title,
             username=user,
             public_or_private=public_or_private,
+            url=youtube_url
         )
         b.save()
         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
         
-        # youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
+        # Download YouTube video
         URLS = [youtube_url]
         ydl_opts = {"outtmpl": f"videos/{b.id}.mp4", "format": "mp4"}
         with YoutubeDL(ydl_opts) as ydl:
-            youtube_video = ydl.download(URLS)
-            print("videoooo", youtube_video)
+            ydl.download(URLS)
 
         # Check file type and length
         clip = VideoFileClip(f"videos/{b.id}.mp4")
@@ -331,8 +384,61 @@ class YoutubeDownloader(APIView):
         if duration > 120:  # 2 minutes = 120 seconds
             return Response({"error": "Video duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Extract first frame
         FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
-        descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
+        
+        # Create frames
+        create_frames(f"videos/{b.id}.mp4", f"videos/{b.id}_frames")
+        
+        # Generate descriptions
+        video_folder = f"videos/{b.id}_frames"
+        descriptions, time_stamps = create_descriptions(video_folder)
         create_descs(b.id, time_stamps, descriptions)
+        
+        # Remove video file
+        os.remove(f"videos/{b.id}.mp4")
 
-        return Response({"status": "success"}, status=204)
+        return Response({"status": "success"}, status=status.HTTP_204_NO_CONTENT)
+
+# class YoutubeDownloader(APIView):
+#     def post(self, request):
+#         # CHECK JWT TOKEN
+#         token = json.loads(request.body.decode("utf-8"))["jwt"]
+#         jwt_users1 = JWT_Users()
+#         jwt_users1.initialize()
+#         user = jwt_users1.find_user(token)
+#         if not user:
+#             return Response({"status": "USER_NOT_LOGGED_IN"}, status=status.HTTP_200_OK)
+#         # CHECK JWT TOKEN
+
+#         youtube_url = json.loads(request.body.decode("utf-8"))["youtube_url"]
+#         public_or_private = json.loads(request.body.decode("utf-8"))[
+#             "public_or_private"
+#         ]
+        
+#         b = VideoModel(
+#             title=YouTube(youtube_url).title,
+#             username=user,
+#             public_or_private=public_or_private,
+#         )
+#         b.save()
+#         VideoModel.objects.filter(id=b.id).update(video_path=f"videos/{b.id}.mp4")
+        
+#         # youtube_video = YouTube(youtube_url).streams.filter(progressive=True, file_extension='mp4').first().download(f"videos", f"{b.id}.mp4")
+#         URLS = [youtube_url]
+#         ydl_opts = {"outtmpl": f"videos/{b.id}.mp4", "format": "mp4"}
+#         with YoutubeDL(ydl_opts) as ydl:
+#             youtube_video = ydl.download(URLS)
+#             print("videoooo", youtube_video)
+
+#         # Check file type and length
+#         clip = VideoFileClip(f"videos/{b.id}.mp4")
+#         duration = clip.duration
+#         if duration > 120:  # 2 minutes = 120 seconds
+#             return Response({"error": "Video duration must be 2 minutes or less"}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         FileUpload.extract_first_frame(f"videos/{b.id}.mp4", f"videos/{b.id}.png")
+#         descriptions, time_stamps = create_descriptions(f"videos/{b.id}.mp4")
+#         create_descs(b.id, time_stamps, descriptions)
+
+#         return Response({"status": "success"}, status=204)
